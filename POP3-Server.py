@@ -84,9 +84,22 @@ def get_emails(user_id):
 
     return emails
 
-# Define POP3 functions
+
+def retr_command(user_id, email_id):
+    connection = create_db_connection()
+    cursor = connection.cursor()
+
+    query = "SELECT body FROM emails WHERE user_id = %s AND id = %s"
+    cursor.execute(query, (user_id, email_id))
+
+    result = cursor.fetchone()
+    cursor.close()
+    connection.close()
+
+    return result[0] if result else None
 
 
+# Pop3 server with function calls
 def pop3_server():
     # create POP3 server socket
     pop3_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -109,7 +122,6 @@ def pop3_server():
                 data = client_socket.recv(1024)
                 if not data:
                     break
-
                 # process POP3 commands
                 if data.startswith(b'USER'):
                     # USER command
@@ -130,7 +142,6 @@ def pop3_server():
                     else:
                         client_socket.send(b'-ERR password incorrect\r\n')
                         break
-
                 elif data.startswith(b'LIST'):
                     # LIST command
                     print('List command processed, fetching email list from database')
@@ -146,9 +157,19 @@ def pop3_server():
                         client_socket.send(b'.\r\n')
                     else:
                         client_socket.send(b'+OK 0 messages\r\n')
-                    print("ALL EMAILS:")
-                    print(get_emails(user_id))
+                elif data.startswith(b'RETR'):
+                    # RETR command
+                    print('RETR command processed, fetching email body from database')
+                    user_id = get_user_id(username)
+                    email_id = int(data.split()[1])
 
+                    email_body = retr_command(user_id, email_id)
+                    if email_body:
+                        client_socket.send(b'+OK\r\n')
+                        client_socket.send(email_body.encode())
+                        client_socket.send(b'\r\n.\r\n')
+                    else:
+                        client_socket.send(b'-ERR Email not found\r\n')
                 elif data.startswith(b'QUIT'):
                     # handle QUIT command
                     client_socket.send(b'+OK Bye\r\n')

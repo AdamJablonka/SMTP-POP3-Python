@@ -37,9 +37,10 @@ def pop3_client():
     while True:
         print("Menu:")
         print("1. LIST Command")
-        print("2. Exit")
+        print("2. RETR Command")
+        print("3. Exit")
 
-        choice = input("Enter your choice (1-2): ")
+        choice = input("Enter your choice (1-3): ")
 
         if choice == '1':
             # send LIST command to list messages
@@ -47,6 +48,13 @@ def pop3_client():
             data = pop3_client_socket.recv(1024)
             print(data.decode())
         elif choice == '2':
+            # send RETR command to retrieve a message
+            message_number = input("Enter the message number to retrieve: ")
+            pop3_client_socket.send(f"RETR {message_number}\r\n".encode())
+            # Increase the buffer size for larger emails
+            data = pop3_client_socket.recv(4096)
+            print(data.decode())
+        elif choice == '3':
             # send QUIT command to log out and close the connection
             pop3_client_socket.send(b"QUIT\r\n")
             data = pop3_client_socket.recv(1024)
