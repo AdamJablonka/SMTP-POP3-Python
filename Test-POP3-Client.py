@@ -34,19 +34,31 @@ def pop3_client():
     data = pop3_client_socket.recv(1024)
     print(data.decode(), end='')
 
-    # send LIST command to list messages
-    pop3_client_socket.send(b"LIST\r\n")
-    data = pop3_client_socket.recv(1024)
-    print(data.decode())
+    while True:
+        print("Menu:")
+        print("1. LIST Command")
+        print("2. Exit")
 
-    # send QUIT command to log out and close the connection
-    pop3_client_socket.send(b"QUIT\r\n")
-    data = pop3_client_socket.recv(1024)
-    print(data.decode())
+        choice = input("Enter your choice (1-2): ")
 
-    # Close POP3 connection
-    pop3_client_socket.close()
-    print('client closed')
+        if choice == '1':
+            # send LIST command to list messages
+            pop3_client_socket.send(b"LIST\r\n")
+            data = pop3_client_socket.recv(1024)
+            print(data.decode())
+        elif choice == '2':
+            # send QUIT command to log out and close the connection
+            pop3_client_socket.send(b"QUIT\r\n")
+            data = pop3_client_socket.recv(1024)
+            print(data.decode())
+
+            # Close POP3 connection
+            pop3_client_socket.close()
+            print('client closed')
+            break
+        else:
+            # Invalid input
+            print("Invalid choice. Please try again.")
 
 
 pop3_client()

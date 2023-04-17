@@ -43,7 +43,50 @@ def authenticate_password(username, password):
     return result is not None
 
 
+def get_user_id(username):
+    connection = create_db_connection()
+    cursor = connection.cursor()
+
+    query = "SELECT id FROM users WHERE username = %s"
+    cursor.execute(query, (username,))
+
+    result = cursor.fetchone()
+    cursor.close()
+    connection.close()
+
+    return result[0] if result else None
+
+
+def list_command(user_id):
+    connection = create_db_connection()
+    cursor = connection.cursor()
+
+    query = "SELECT id, LENGTH(body) as size FROM emails WHERE user_id = %s"
+    cursor.execute(query, (user_id,))
+
+    result = cursor.fetchall()
+    cursor.close()
+    connection.close()
+
+    return result
+
+
+def get_emails(user_id):
+    connection = create_db_connection()
+    cursor = connection.cursor()
+
+    query = "SELECT id, subject, sender, recipient, date FROM emails WHERE user_id = %s"
+    cursor.execute(query, (user_id,))
+
+    emails = cursor.fetchall()
+    cursor.close()
+    connection.close()
+
+    return emails
+
 # Define POP3 functions
+
+
 def pop3_server():
     # create POP3 server socket
     pop3_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -90,15 +133,27 @@ def pop3_server():
 
                 elif data.startswith(b'LIST'):
                     # LIST command
-                    print(
-                        'List command processed, sending that there is 1 message of size 100 bytes in inbox')
-                    client_socket.send(b'+OK 1 messages:\r\n')
-                    client_socket.send(b'1 100\r\n')
-                    client_socket.send(b'.\r\n')
+                    print('List command processed, fetching email list from database')
+                    user_id = get_user_id(username)
+                    email_list = list_command(user_id)
+
+                    if email_list:
+                        client_socket.send(
+                            f'+OK {len(email_list)} messages:\r\n'.encode())
+                        for email in email_list:
+                            client_socket.send(
+                                f'{email[0]} {email[1]}\r\n'.encode())
+                        client_socket.send(b'.\r\n')
+                    else:
+                        client_socket.send(b'+OK 0 messages\r\n')
+                    print("ALL EMAILS:")
+                    print(get_emails(user_id))
+
                 elif data.startswith(b'QUIT'):
                     # handle QUIT command
                     client_socket.send(b'+OK Bye\r\n')
                     client_socket.close()
+                    print(f'Connection with {username} closed')
                     break
                 else:
                     client_socket.send(b'-ERR Unknown command\r\n')
