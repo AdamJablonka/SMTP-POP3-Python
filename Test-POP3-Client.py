@@ -55,6 +55,12 @@ def pop3_client():
             data = pop3_client_socket.recv(4096)
             print(data.decode())
         elif choice == '3':
+            message_number = input("Enter the message number to delete: ")
+            print('Sending DELE command...')
+            pop3_client_socket.send(f"DELE {message_number}\r\n".encode())
+            response = pop3_client_socket.recv(1024)
+            print(f'DELE response: {response.decode()}')
+        elif choice == '4':
             # send QUIT command to log out and close the connection
             pop3_client_socket.send(b"QUIT\r\n")
             data = pop3_client_socket.recv(1024)

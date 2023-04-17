@@ -99,7 +99,23 @@ def retr_command(user_id, email_id):
     return result[0] if result else None
 
 
+def dele_command(user_id, email_id):
+    connection = create_db_connection()
+    cursor = connection.cursor()
+
+    query = "DELETE FROM emails WHERE user_id = %s AND id = %s"
+    cursor.execute(query, (user_id, email_id))
+
+    connection.commit()
+    affected_rows = cursor.rowcount
+    cursor.close()
+    connection.close()
+
+    return affected_rows > 0
+
 # Pop3 server with function calls
+
+
 def pop3_server():
     # create POP3 server socket
     pop3_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -122,9 +138,9 @@ def pop3_server():
                 data = client_socket.recv(1024)
                 if not data:
                     break
-                # process POP3 commands
+            # process POP3 commands
+                # handle USER command
                 if data.startswith(b'USER'):
-                    # USER command
                     print(f'User processed:{data.split()[1].decode()}')
                     username = data.split()[1].decode()
 
@@ -133,8 +149,8 @@ def pop3_server():
                     else:
                         client_socket.send(b'-ERR User not found\r\n')
                         break
+                # handle PASS command
                 elif data.startswith(b'PASS'):
-                    # PASS command
                     print(f'Password processed:{data.split()[1].decode()}')
                     password = data.split()[1].decode()
                     if authenticate_password(username, password):
@@ -142,8 +158,8 @@ def pop3_server():
                     else:
                         client_socket.send(b'-ERR password incorrect\r\n')
                         break
+                # handle LIST command
                 elif data.startswith(b'LIST'):
-                    # LIST command
                     print('List command processed, fetching email list from database')
                     user_id = get_user_id(username)
                     email_list = list_command(user_id)
@@ -157,8 +173,8 @@ def pop3_server():
                         client_socket.send(b'.\r\n')
                     else:
                         client_socket.send(b'+OK 0 messages\r\n')
+                # handle RETR command
                 elif data.startswith(b'RETR'):
-                    # RETR command
                     print('RETR command processed, fetching email body from database')
                     user_id = get_user_id(username)
                     email_id = int(data.split()[1])
@@ -170,8 +186,18 @@ def pop3_server():
                         client_socket.send(b'\r\n.\r\n')
                     else:
                         client_socket.send(b'-ERR Email not found\r\n')
+                # handle DELE command
+                elif data.startswith(b'DELE'):
+                    print('DELE command processed, deleting email from database')
+                    user_id = get_user_id(username)
+                    email_id = int(data.split()[1])
+
+                    if dele_command(user_id, email_id):
+                        client_socket.send(b'+OK Email deleted\r\n')
+                    else:
+                        client_socket.send(b'-ERR Email not found\r\n')
+                # handle QUIT command
                 elif data.startswith(b'QUIT'):
-                    # handle QUIT command
                     client_socket.send(b'+OK Bye\r\n')
                     client_socket.close()
                     print(f'Connection with {username} closed')
