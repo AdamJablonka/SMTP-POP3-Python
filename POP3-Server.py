@@ -8,10 +8,10 @@ HOST = 'localhost'  # '15.204.245.120'
 
 def create_db_connection():
     return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="",
-        database="pop3_server"
+        host="18.221.218.0",
+        user="emailClient",
+        password="381Password!",
+        database="emailDatabase"
     )
 
 
