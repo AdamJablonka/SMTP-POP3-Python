@@ -1,6 +1,7 @@
 # Implement the essential POP3 commands, such as USER, PASS, LIST, RETR, DELE, and QUIT.
 import mysql.connector
 import socket
+import time
 
 POP3_PORT = 110
 HOST = 'localhost'  # '15.204.245.120'
@@ -89,10 +90,10 @@ def retr_command(user_id, email_id):
     connection = create_db_connection()
     cursor = connection.cursor()
 
-    query = "SELECT body FROM emails WHERE user_id = %s AND id = %s"
-    cursor.execute(query, (user_id, email_id))
+    query = "SELECT subject, sender, body FROM emails WHERE user_id = %s AND id = %s"
+    cursor.execute(query, (user_id, email_id,))
 
-    result = cursor.fetchone()
+    result = cursor.fetchall()
     cursor.close()
     connection.close()
 
@@ -119,6 +120,7 @@ def dele_command(user_id, email_id):
 def pop3_server():
     # create POP3 server socket
     pop3_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    pop3_server_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
     pop3_server_socket.bind((HOST, POP3_PORT))
     pop3_server_socket.listen(1)
 
@@ -141,7 +143,7 @@ def pop3_server():
             # process POP3 commands
                 # handle USER command
                 if data.startswith(b'USER'):
-                    print(f'User processed:{data.split()[1].decode()}')
+                    print(f'User processed: {data.split()[1].decode()}')
                     username = data.split()[1].decode()
 
                     if authenticate_user(username):
@@ -151,7 +153,7 @@ def pop3_server():
                         break
                 # handle PASS command
                 elif data.startswith(b'PASS'):
-                    print(f'Password processed:{data.split()[1].decode()}')
+                    print(f'Password processed: {data.split()[1].decode()}')
                     password = data.split()[1].decode()
                     if authenticate_password(username, password):
                         client_socket.send(b'+OK Pass accepted\r\n')
@@ -178,17 +180,20 @@ def pop3_server():
                     print('RETR command processed, fetching email body from database')
                     user_id = get_user_id(username)
                     email_id = int(data.split()[1])
-
-                    email_body = retr_command(user_id, email_id)
-                    if email_body:
+                    retr_res = retr_command(user_id, email_id)
+                    if retr_res:
                         client_socket.send(b'+OK\r\n')
-                        client_socket.send(email_body.encode())
+                        print(type(retr_res))
+                        print(retr_res)
+                        client_socket.send(
+                            f'SUBJECT: {retr_res[0]} SENDER: {retr_res[1]} BODY: {retr_res[2]}'.encode())
                         client_socket.send(b'\r\n.\r\n')
                     else:
                         client_socket.send(b'-ERR Email not found\r\n')
                 # handle DELE command
                 elif data.startswith(b'DELE'):
-                    print('DELE command processed, deleting email from database')
+                    print(
+                        'DELE command processed, email queued for deletion, will commence after QUIT command.')
                     user_id = get_user_id(username)
                     email_id = int(data.split()[1])
 

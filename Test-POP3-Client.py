@@ -12,9 +12,22 @@ CLIENT_DOMAIN = '348.edu'
 # Define POP3 functions
 
 
+def receive_data(sock):
+    chunks = []
+    while True:
+        chunk = sock.recv(8192)
+        if not chunk:
+            break
+        chunks.append(chunk)
+        if b'\r\n.\r\n' in chunk:
+            break
+    return b''.join(chunks).decode()
+
+
 def pop3_client():
     # Connect to POP3 server socket
     pop3_client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    pop3_client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
     pop3_client_socket.connect((HOST, POP3_PORT))
 
     # Receive POP3 greeting from server
@@ -43,7 +56,8 @@ def pop3_client():
         print("3. DELE command")
         print("4. Exit")
 
-        choice = input("Enter your choice (1-3): ")
+        choice = input("Enter your choice (4): ")
+        print("-----------------------")
 
         if choice == '1':
             # send LIST command to list messages
@@ -55,8 +69,10 @@ def pop3_client():
             message_number = input("Enter the message number to retrieve: ")
             pop3_client_socket.send(f"RETR {message_number}\r\n".encode())
             # Increase the buffer size for larger emails
-            data = pop3_client_socket.recv(4096)
-            print(data.decode())
+            data = receive_data(pop3_client_socket)
+            print(data)
+            # data = pop3_client_socket.recv(1024)
+            # print(data.decode())
         elif choice == '3':
             message_number = input("Enter the message number to delete: ")
             print('Sending DELE command...')
@@ -66,7 +82,7 @@ def pop3_client():
         elif choice == '4':
             # send QUIT command to log out and close the connection
             pop3_client_socket.send(b"QUIT\r\n")
-            data = pop3_client_socket.recv(1024)
+            data = pop3_client_socket.recv(8192)
             print(data.decode())
 
             # Close POP3 connection
