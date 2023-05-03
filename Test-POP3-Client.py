@@ -11,7 +11,8 @@ CLIENT_DOMAIN = '348.edu'
 
 # Define POP3 functions
 
-
+# receive data function takes in a large amount of data, to not overflow buffer, waits until it finishes receiving data
+# and ends when . command is sent from the server.
 def receive_data(sock):
     chunks = []
     while True:
