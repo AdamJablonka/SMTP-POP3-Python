@@ -1,107 +1,18 @@
-TODO:
+#POP3 and SMTP with Python TCP Sockets
 
-- merge pop3_server() and SMTP_server() in one file, user has choose either send or look at emails, if look is sent, calls pop3_server(), otherwise stmp_server() is called.
--
-- Satar: create MySQL queries for user authentication? or do user authentication on client connection, then remove user authentication from server functions.
+# Introduction
 
-MySql DB setup commands:
+Our semester-long project for CSCI 348 includes a personal implementation of an email applica-
+tion built on a low level only implementing two libraries for the core implementation. The two
+core libraries that we used to achieve this implementation are the Python socket library and the
+mysql.connector library. The socket library is a low-level networking interface for Python that
+allows you to manually set IP address connections, port numbers, send/receive encoded messages,
+etc.
 
-```sql
-CREATE DATABASE email_database;
-
-USE email_databases;
-
-CREATE TABLE users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(255) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL
-);
-
-CREATE TABLE emails (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT,
-    subject VARCHAR(255),
-    sender VARCHAR(255),
-    recipient VARCHAR(255),
-    date DATETIME,
-    body TEXT,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-);
-```
-
-SQL commands for sending email:
-Check if recipient exists:
-
-```python
-def get_recipient(recipient):
-    connection = create_db_connection()
-    cursor = connection.cursor()
-
-    query = "SELECT id FROM users WHERE username = %s"
-    cursor.execute(query, (recipient,))
-
-    result = cursor.fetchone()
-    cursor.close()
-    connection.close()
-
-    return result[0] if result else None
-```
-
-IF EXIST:
-
-```sql
-INSERT INTO emails (user_id, subject, sender, recipient, date, body)
-VALUES (1, 'Sample Subject', 'sender@example.com', 'recipient@example.com', '2023-04-28 12:00:00', 'This is the email body.');
-```
-
-```python
-import datetime
-import mysql.connector
-
-def get_user_id(email):
-    connection = create_db_connection()
-    cursor = connection.cursor()
-
-    query = "SELECT id FROM users WHERE username = %s"
-    cursor.execute(query, (email,))
-
-    result = cursor.fetchone()
-    cursor.close()
-    connection.close()
-
-    return result[0] if result else None
-
-def insert_email(sender):
-    # Get recipient from user input
-    recipient = input("Enter the recipient's email: ")
-
-    # Get recipient's user_id
-    recipient_id = get_user_id(recipient)
-
-    if recipient_id is None:
-        print("ERR - the recipient does not exist")
-        # break from here? depends on your code ^^^^
-    else:
-        # Get current date and time
-        current_date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-        # Get email subject and body from user
-        subject = input("Enter the email subject: ")
-        body = input("Enter the email body: ")
-
-        connection = create_db_connection()
-        cursor = connection.cursor()
-
-        query = """
-        INSERT INTO emails (user_id, subject, sender, recipient, date, body)
-        VALUES (%s, %s, %s, %s, %s, %s);
-        """
-
-        cursor.execute(query, (recipient_id, subject, sender, recipient, current_date, body))
-        connection.commit()
-
-        cursor.close()
-        connection.close()
-        print("Email has been sent successfully.")
-
-```
+Implementation of the email protocols Post Office Protocol - Version 3, and Simple Mail
+Transfer Protocol derived from information gained from lectures and RFC internet standard
+documentation. Account and email storage derived from a MySQL database hosted on an
+AWS EC2 instance. Information about TCP socket programming from Python’s socket low-
+level networking interface documentation. The majority of the project (aside from some design
+changes and bug fixes) was done through in-person collaboration, and work between all mem-
+bers is equal.
