@@ -1,6 +1,6 @@
 # POP3 and SMTP with Python TCP Sockets
 
-**Adam Jablonka, Muazzum Akhtar, Satar Hassni**
+** Author: Adam Jablonka
 
 ---
 
